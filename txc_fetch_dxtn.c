@@ -28,19 +28,12 @@
 /* inefficient. To be efficient, it would be necessary to decode 16 pixels at once */
 
 static void dxt135_decode_imageblock ( const GLubyte *img_block_src,
-                              GLint i, GLint j, GLuint dxt_type, GLvoid *texel ) {
+                         GLint i, GLint j, GLuint dxt_type, GLvoid *texel ) {
    GLchan *rgba = (GLchan *) texel;
-   const GLubyte *c0_lo = img_block_src + 0;
-   const GLubyte *c0_hi = img_block_src + 1;
-   const GLubyte *c1_lo = img_block_src + 2;
-   const GLubyte *c1_hi = img_block_src + 3;
-   const GLubyte *bits_0 = img_block_src + 4;
-   const GLubyte *bits_1 = img_block_src + 5;
-   const GLubyte *bits_2 = img_block_src + 6;
-   const GLubyte *bits_3 = img_block_src + 7;
-   GLushort color0 = *c0_lo + *c0_hi * 256;
-   GLushort color1 = *c1_lo + *c1_hi * 256;
-   GLuint bits = *bits_0 + 256 * (*bits_1 + 256 * (*bits_2 + 256 * *bits_3));
+   const GLushort color0 = img_block_src[0] | (img_block_src[1] << 8);
+   const GLushort color1 = img_block_src[2] | (img_block_src[3] << 8);
+   const GLuint bits = img_block_src[4] | (img_block_src[5] << 8) |
+      (img_block_src[6] << 16) | (img_block_src[7] << 24);
    /* What about big/little endian? */
    GLubyte bit_pos = 2 * (j * 4 + i) ;
    GLubyte code = (GLubyte) ((bits >> bit_pos) & 3);
@@ -59,24 +52,32 @@ static void dxt135_decode_imageblock ( const GLubyte *img_block_src,
          break;
       case 2:
          if (color0 > color1) {
-            rgba[RCOMP] = UBYTE_TO_CHAN( (((color0 >> 8) & 0xf8) * 255 / 0xf8 * 2 + ((color1 >> 8) & 0xf8) * 255 / 0xf8 ) / 3);
-            rgba[GCOMP] = UBYTE_TO_CHAN( (((color0 >> 3) & 0xfc) * 255 / 0xfc * 2 + ((color1 >> 3) & 0xfc) * 255 / 0xfc ) / 3);
-            rgba[BCOMP] = UBYTE_TO_CHAN( (((color0 << 3) & 0xf8) * 255 / 0xf8 * 2 + ((color1 << 3) & 0xf8) * 255 / 0xf8 ) / 3);
+            rgba[RCOMP] = UBYTE_TO_CHAN( (((color0 >> 8) & 0xf8) * 255 / 0xf8 * 2 +
+               ((color1 >> 8) & 0xf8) * 255 / 0xf8 ) / 3);
+            rgba[GCOMP] = UBYTE_TO_CHAN( (((color0 >> 3) & 0xfc) * 255 / 0xfc * 2 +
+               ((color1 >> 3) & 0xfc) * 255 / 0xfc ) / 3);
+            rgba[BCOMP] = UBYTE_TO_CHAN( (((color0 << 3) & 0xf8) * 255 / 0xf8 * 2 +
+               ((color1 << 3) & 0xf8) * 255 / 0xf8 ) / 3);
             rgba[ACOMP] = CHAN_MAX;
          }
          else {
-            rgba[RCOMP] = UBYTE_TO_CHAN( (((color0 >> 8) & 0xf8) * 255 / 0xf8 + ((color1 >> 8) & 0xf8) * 255 / 0xf8 ) / 2);
-            rgba[GCOMP] = UBYTE_TO_CHAN( (((color0 >> 3) & 0xfc) * 255 / 0xfc + ((color1 >> 3) & 0xfc) * 255 / 0xfc ) / 2);
-            rgba[BCOMP] = UBYTE_TO_CHAN( (((color0 << 3) & 0xf8) * 255 / 0xf8 + ((color1 << 3) & 0xf8) * 255 / 0xf8 ) / 2);
+            rgba[RCOMP] = UBYTE_TO_CHAN( (((color0 >> 8) & 0xf8) * 255 / 0xf8 +
+               ((color1 >> 8) & 0xf8) * 255 / 0xf8 ) / 2);
+            rgba[GCOMP] = UBYTE_TO_CHAN( (((color0 >> 3) & 0xfc) * 255 / 0xfc +
+               ((color1 >> 3) & 0xfc) * 255 / 0xfc ) / 2);
+            rgba[BCOMP] = UBYTE_TO_CHAN( (((color0 << 3) & 0xf8) * 255 / 0xf8 +
+               ((color1 << 3) & 0xf8) * 255 / 0xf8 ) / 2);
             rgba[ACOMP] = CHAN_MAX;
          }
          break;
       case 3:
-         /* don't understand the spec. Is the dxt_type switch necessary for other code cases too? */
          if ((dxt_type > 1) || (color0 > color1)) {
-            rgba[RCOMP] = UBYTE_TO_CHAN( (((color0 >> 8) & 0xf8) * 255 / 0xf8 + ((color1 >> 8) & 0xf8) * 255 / 0xf8 * 2) / 3);
-            rgba[GCOMP] = UBYTE_TO_CHAN( (((color0 >> 3) & 0xfc) * 255 / 0xfc + ((color1 >> 3) & 0xfc) * 255 / 0xfc * 2) / 3);
-            rgba[BCOMP] = UBYTE_TO_CHAN( (((color0 << 3) & 0xf8) * 255 / 0xf8 + ((color1 << 3) & 0xf8) * 255 / 0xf8 * 2) / 3);
+            rgba[RCOMP] = UBYTE_TO_CHAN( (((color0 >> 8) & 0xf8) * 255 / 0xf8 +
+               ((color1 >> 8) & 0xf8) * 255 / 0xf8 * 2) / 3);
+            rgba[GCOMP] = UBYTE_TO_CHAN( (((color0 >> 3) & 0xfc) * 255 / 0xfc +
+               ((color1 >> 3) & 0xfc) * 255 / 0xfc * 2) / 3);
+            rgba[BCOMP] = UBYTE_TO_CHAN( (((color0 << 3) & 0xf8) * 255 / 0xf8 +
+               ((color1 << 3) & 0xf8) * 255 / 0xf8 * 2) / 3);
             rgba[ACOMP] = CHAN_MAX;
          }
          else {
@@ -127,19 +128,16 @@ void fetch_2d_texel_rgba_dxt3(GLint srcRowStride, const GLubyte *pixdata,
 
    GLchan *rgba = (GLchan *) texel;
    const GLubyte *blksrc = (pixdata + ((srcRowStride + 3) / 4 * (j / 4) + (i / 4)) * (16));
+   const GLubyte bit_pos = 4 * ((j&3) * 4 + (i&3));
+   /* Simple 32bit version. */
+   const GLuint alpha_low = blksrc[0] | (blksrc[1] << 8) | (blksrc[2] << 16) | (blksrc[3] << 24);
+   const GLuint alpha_high = blksrc[4] | (blksrc[5] << 8) | (blksrc[6] << 16) | (blksrc[7] << 24);
+
    dxt135_decode_imageblock(blksrc + 8, (i&3), (j&3), 2, texel);
-   {
-      GLubyte bit_pos = 4 * ((j&3) * 4 + (i&3));
-      /* Simple 32bit version. */
-      GLuint alpha_low = *blksrc | (*++blksrc << 8) | (*++blksrc << 16) | (*++blksrc << 24);
-      GLuint alpha_high = *++blksrc | (*++blksrc << 8) | (*++blksrc << 16) | (*++blksrc << 24);
-/*      GLuint alpha_low = *((GLuint *)blksrc)++;
-      GLuint alpha_high = *(GLuint *)blksrc;*/
-      if (bit_pos < 32)
-         rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte)((((alpha_low >> bit_pos) & 15) * 255) / 15));
-      else
-         rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte)((((alpha_high >> (bit_pos - 32)) & 15) * 255) / 15));
-   }
+   if (bit_pos < 32)
+      rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte)((((alpha_low >> bit_pos) & 15) * 255) / 15));
+   else
+      rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte)((((alpha_high >> (bit_pos - 32)) & 15) * 255) / 15));
 }
 
 void fetch_2d_texel_rgba_dxt5(GLint srcRowStride, const GLubyte *pixdata,
@@ -151,62 +149,59 @@ void fetch_2d_texel_rgba_dxt5(GLint srcRowStride, const GLubyte *pixdata,
 
    GLchan *rgba = (GLchan *) texel;
    const GLubyte *blksrc = (pixdata + ((srcRowStride + 3) / 4 * (j / 4) + (i / 4)) * (16));
+   const GLushort alpha0 = blksrc[0];
+   const GLushort alpha1 = blksrc[1];
+   const GLubyte bit_pos = 3 * ((j&3) * 4 + (i&3));
+   /* simple 32bit version */
+   const GLuint bits_low = blksrc[2] | (blksrc[3] << 8) | (blksrc[4] << 16) | (blksrc[5] << 24);
+   const GLuint bits_high = blksrc[6] | (blksrc[7] << 8);
+   GLubyte code;
+
+   if (bit_pos < 30)
+      code = (GLubyte) ((bits_low >> bit_pos) & 7);
+   else if (bit_pos == 30)
+      code = (GLubyte) ((bits_low >> 30) & 3) | ((bits_high << 2) & 4);
+   else
+      code = (GLubyte) ((bits_high >> (bit_pos - 32)) & 7);
    dxt135_decode_imageblock(blksrc + 8, (i&3), (j&3), 2, texel);
-   {
-      GLubyte code;
-      GLushort alpha0 = *blksrc++;
-      GLushort alpha1 = *blksrc++;
-      GLubyte bit_pos = 3 * ((j&3) * 4 + (i&3));
-      /* simple 32bit version */
-      GLuint bits_low = *blksrc | (*++blksrc << 8) | (*++blksrc << 16) | (*++blksrc << 24);
-      GLuint bits_high = *++blksrc | (*++blksrc << 8);
-/*      GLuint bits_low = *((GLuint *)blksrc)++;
-      GLuint bits_high = *(GLuint *)blksrc;*/
-      if (bit_pos < 30)
-         code = (GLubyte) ((bits_low >> bit_pos) & 7);
-      else if (bit_pos == 30)
-         code = (GLubyte) ((bits_low >> 30) & 3) | ((bits_high << 2) & 4);
-      else
-         code = (GLubyte) ((bits_high >> (bit_pos - 32)) & 7);
-      if (alpha0 > alpha1)
-         switch (code) {
-            case 0:
-               rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte) alpha0);
-               break;
-            case 1:
-               rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte) alpha1);
-               break;
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-               rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte)
-                  ((alpha0 * (8 - code) + (alpha1 * (code - 1))) / 7));
-               break;
-         }
-      else
-         switch (code) {
-            case 0:
-               rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte) alpha0);
-               break;
-            case 1:
-               rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte) alpha1);
-               break;
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-               rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte)
-                  ((alpha0 * (6 - code) + (alpha1 * (code - 1))) / 5));;
-               break;
-            case 6:
-               rgba[ACOMP] = 0;
-               break;
-            case 7:
-               rgba[ACOMP] = CHAN_MAX;
-               break;
-         }
-   }
+   if (alpha0 > alpha1)
+      switch (code) {
+         case 0:
+            rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte) alpha0);
+            break;
+         case 1:
+            rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte) alpha1);
+            break;
+         case 2:
+         case 3:
+         case 4:
+         case 5:
+         case 6:
+         case 7:
+            rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte)
+               ((alpha0 * (8 - code) + (alpha1 * (code - 1))) / 7));
+            break;
+      }
+   else
+      switch (code) {
+         case 0:
+            rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte) alpha0);
+            break;
+         case 1:
+            rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte) alpha1);
+            break;
+         case 2:
+         case 3:
+         case 4:
+         case 5:
+            rgba[ACOMP] = UBYTE_TO_CHAN((GLubyte)
+               ((alpha0 * (6 - code) + (alpha1 * (code - 1))) / 5));;
+            break;
+         case 6:
+            rgba[ACOMP] = 0;
+            break;
+         case 7:
+            rgba[ACOMP] = CHAN_MAX;
+            break;
+      }
 }
