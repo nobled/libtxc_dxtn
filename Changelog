@@ -1,0 +1,2 @@
+20050819:
+- clean up / make faster the fetch functions, especially the 565 to 888 expand was slow
