@@ -145,17 +145,16 @@ static void fancybasecolorsearch( GLubyte *blkaddr, GLubyte srccolors[4][4][4], 
    }
    if (nrcolor[0] == 0) nrcolor[0] = 1;
    if (nrcolor[1] == 0) nrcolor[1] = 1;
-   for (i = 0; i < 3; i++) {
-      if ((testcolor[0][i] + blockerrlin[0][i] / nrcolor[0]) <= 0)
-         testcolor[0][i] = 0;
-      else testcolor[0][i] = (testcolor[0][i] + blockerrlin[0][i] / nrcolor[0]);
+   for (j = 0; j < 2; j++) {
+      for (i = 0; i < 3; i++) {
+	 GLint newvalue = testcolor[j][i] + blockerrlin[j][i] / nrcolor[j];
+	 if (newvalue <= 0)
+	    testcolor[j][i] = 0;
+	 else if (newvalue >= 255)
+	    testcolor[j][i] = 255;
+	 else testcolor[j][i] = newvalue;
+      }
    }
-   for (i = 0; i < 3; i++) {
-      if ((testcolor[1][i] + blockerrlin[1][i] / nrcolor[1]) >= 255)
-         testcolor[1][i] = 255;
-      else testcolor[1][i] = (testcolor[1][i] + blockerrlin[1][i] / nrcolor[1]);
-   }
-
 
    if ((abs(testcolor[0][0] - testcolor[1][0]) < 8) &&
        (abs(testcolor[0][1] - testcolor[1][1]) < 4) &&
