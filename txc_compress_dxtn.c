@@ -323,23 +323,23 @@ static void storedxtencodedblock( GLubyte *blkaddr, GLubyte srccolors[4][4][4], 
 
    /* finally we're finished, write back colors and bits */
    if ((testerror > testerror2) || (haveAlpha)) {
-      *blkaddr++ = color1 & 0xFF;
+      *blkaddr++ = color1 & 0xff;
       *blkaddr++ = color1 >> 8;
-      *blkaddr++ = color0 & 0xFF;
+      *blkaddr++ = color0 & 0xff;
       *blkaddr++ = color0 >> 8;
-      *blkaddr++ = bits2 & 0xFF;
-      *blkaddr++ = ( bits2 >> 8) & 0xFF;
-      *blkaddr++ = ( bits2 >> 16) & 0xFF;
+      *blkaddr++ = bits2 & 0xff;
+      *blkaddr++ = ( bits2 >> 8) & 0xff;
+      *blkaddr++ = ( bits2 >> 16) & 0xff;
       *blkaddr = bits2 >> 24;
    }
    else {
-      *blkaddr++ = color0 & 0xFF;
+      *blkaddr++ = color0 & 0xff;
       *blkaddr++ = color0 >> 8;
-      *blkaddr++ = color1 & 0xFF;
+      *blkaddr++ = color1 & 0xff;
       *blkaddr++ = color1 >> 8;
-      *blkaddr++ = bits & 0xFF;
-      *blkaddr++ = ( bits >> 8) & 0xFF;
-      *blkaddr++ = ( bits >> 16) & 0xFF;
+      *blkaddr++ = bits & 0xff;
+      *blkaddr++ = ( bits >> 8) & 0xff;
+      *blkaddr++ = ( bits >> 16) & 0xff;
       *blkaddr = bits >> 24;
    }
 }
@@ -399,6 +399,19 @@ static void encodedxtcolorblockfaster( GLubyte *blkaddr, GLubyte srccolors[4][4]
    storedxtencodedblock(blkaddr, srccolors, bestcolor, numxpixels, numypixels, type, haveAlpha);
 }
 
+static void writedxt5encodedalphablock( GLubyte *blkaddr, GLubyte alphabase1, GLubyte alphabase2,
+                         GLubyte alphaenc[16])
+{
+   *blkaddr++ = alphabase1;
+   *blkaddr++ = alphabase2;
+   *blkaddr++ = alphaenc[0] | (alphaenc[1] << 3) | ((alphaenc[2] & 3) << 6);
+   *blkaddr++ = (alphaenc[2] >> 2) | (alphaenc[3] << 1) | (alphaenc[4] << 4) | ((alphaenc[5] & 1) << 7);
+   *blkaddr++ = (alphaenc[5] >> 1) | (alphaenc[6] << 2) | (alphaenc[7] << 5);
+   *blkaddr++ = alphaenc[8] | (alphaenc[9] << 3) | ((alphaenc[10] & 3) << 6);
+   *blkaddr++ = (alphaenc[10] >> 2) | (alphaenc[11] << 1) | (alphaenc[12] << 4) | ((alphaenc[13] & 1) << 7);
+   *blkaddr++ = (alphaenc[13] >> 1) | (alphaenc[14] << 2) | (alphaenc[15] << 5);
+}
+
 static void encodedxt5alpha(GLubyte *blkaddr, GLubyte srccolors[4][4][4],
                             GLint numxpixels, GLint numypixels)
 {
@@ -412,7 +425,7 @@ static void encodedxt5alpha(GLubyte *blkaddr, GLubyte srccolors[4][4][4],
    GLshort alphadist;
 
    /* find lowest and highest alpha value in block, alphabase[0] lowest, alphabase[1] highest */
-   alphabase[0] = 0xFF; alphabase[1] = 0x00;
+   alphabase[0] = 0xff; alphabase[1] = 0x0;
    for (j = 0; j < numypixels; j++) {
       for (i = 0; i < numxpixels; i++) {
          if (srccolors[j][i][3] == 0)
@@ -434,8 +447,7 @@ static void encodedxt5alpha(GLubyte *blkaddr, GLubyte srccolors[4][4][4],
       /* || (alphabase[0] == alphabase[1] && !alphaabsmin && !alphaabsmax) */
       /* could also thest for alpha0 == alpha1 (and not min/max), but probably not common, so don't bother */
 
-      alphabase[0] = srccolors[0][0][3];
-      *blkaddr++ = alphabase[0];
+      *blkaddr++ = srccolors[0][0][3];
       *blkaddr++;
       *blkaddr++ = 0;
       *blkaddr++ = 0;
@@ -450,8 +462,8 @@ static void encodedxt5alpha(GLubyte *blkaddr, GLubyte srccolors[4][4][4],
    /* find best encoding for alpha0 > alpha1 */
    /* it's possible this encoding is better even if both alphaabsmin and alphaabsmax are true */
    alphablockerror1 = 0x0;
-   alphablockerror2 = 0xFFFFFF;
-   alphablockerror3 = 0xFFFFFF;
+   alphablockerror2 = 0xffffffff;
+   alphablockerror3 = 0xffffffff;
    if (alphaabsmin) alphause[0] = 0;
    else alphause[0] = alphabase[0];
    if (alphaabsmax) alphause[1] = 255;
@@ -710,36 +722,15 @@ static void encodedxt5alpha(GLubyte *blkaddr, GLubyte srccolors[4][4][4],
   /* write the alpha values and encoding back. */
    if ((alphablockerror1 <= alphablockerror2) && (alphablockerror1 <= alphablockerror3)) {
 /*      if (alphablockerror1 > 96) fprintf(stderr, "enc1 used, error %d\n", alphablockerror1);*/
-      *blkaddr++ = alphause[1];
-      *blkaddr++ = alphause[0];
-      *blkaddr++ = alphaenc1[0] | (alphaenc1[1] << 3) | ((alphaenc1[2] & 3) << 6);
-      *blkaddr++ = (alphaenc1[2] >> 2) | (alphaenc1[3] << 1) | (alphaenc1[4] << 4) | ((alphaenc1[5] & 1) << 7);
-      *blkaddr++ = (alphaenc1[5] >> 1) | (alphaenc1[6] << 2) | (alphaenc1[7] << 5);
-      *blkaddr++ = alphaenc1[8] | (alphaenc1[9] << 3) | ((alphaenc1[10] & 3) << 6);
-      *blkaddr++ = (alphaenc1[10] >> 2) | (alphaenc1[11] << 1) | (alphaenc1[12] << 4) | ((alphaenc1[13] & 1) << 7);
-      *blkaddr++ = (alphaenc1[13] >> 1) | (alphaenc1[14] << 2) | (alphaenc1[15] << 5);
+      writedxt5encodedalphablock( blkaddr, alphause[1], alphause[0], alphaenc1 );
    }
    else if (alphablockerror2 <= alphablockerror3) {
 /*      if (alphablockerror2 > 96) fprintf(stderr, "enc2 used, error %d\n", alphablockerror2);*/
-      *blkaddr++ = alphabase[0];
-      *blkaddr++ = alphabase[1];
-      *blkaddr++ = alphaenc2[0] | (alphaenc2[1] << 3) | ((alphaenc2[2] & 3) << 6);
-      *blkaddr++ = (alphaenc2[2] >> 2) | (alphaenc2[3] << 1) | (alphaenc2[4] << 4) | ((alphaenc2[5] & 1) << 7);
-      *blkaddr++ = (alphaenc2[5] >> 1) | (alphaenc2[6] << 2) | (alphaenc2[7] << 5);
-      *blkaddr++ = alphaenc2[8] | (alphaenc2[9] << 3) | ((alphaenc2[10] & 3) << 6);
-      *blkaddr++ = (alphaenc2[10] >> 2) | (alphaenc2[11] << 1) | (alphaenc2[12] << 4) | ((alphaenc2[13] & 1) << 7);
-      *blkaddr++ = (alphaenc2[13] >> 1) | (alphaenc2[14] << 2) | (alphaenc2[15] << 5);
+      writedxt5encodedalphablock( blkaddr, alphabase[0], alphabase[1], alphaenc2 );
    }
    else {
 /*      fprintf(stderr, "enc3 used, error %d\n", alphablockerror3);*/
-      *blkaddr++ = alphatest[0];
-      *blkaddr++ = alphatest[1];
-      *blkaddr++ = alphaenc3[0] | (alphaenc3[1] << 3) | ((alphaenc3[2] & 3) << 6);
-      *blkaddr++ = (alphaenc3[2] >> 2) | (alphaenc3[3] << 1) | (alphaenc3[4] << 4) | ((alphaenc3[5] & 1) << 7);
-      *blkaddr++ = (alphaenc3[5] >> 1) | (alphaenc3[6] << 2) | (alphaenc3[7] << 5);
-      *blkaddr++ = alphaenc3[8] | (alphaenc3[9] << 3) | ((alphaenc3[10] & 3) << 6);
-      *blkaddr++ = (alphaenc3[10] >> 2) | (alphaenc3[11] << 1) | (alphaenc3[12] << 4) | ((alphaenc3[13] & 1) << 7);
-      *blkaddr++ = (alphaenc3[13] >> 1) | (alphaenc3[14] << 2) | (alphaenc3[15] << 5);
+      writedxt5encodedalphablock( blkaddr, (GLubyte)alphatest[0], (GLubyte)alphatest[1], alphaenc3 );
    }
 }
 

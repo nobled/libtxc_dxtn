@@ -1,14 +1,18 @@
-libtxc_dxtn.so: txc_compress_dxtn.o txc_fetch_dxtn.o
-	gcc -v -O3 -Wall -pedantic -fPIC -lpthread -shared -o libtxc_dxtn.so txc_compress_dxtn.o txc_fetch_dxtn.o
+CFLAGS += -Wall -pedantic -fPIC
+OPT_CFLAGS = -O3
+LDFLAGS += -shared -fPIC
+OBJS = txc_compress_dxtn.o txc_fetch_dxtn.o
+LIB = libtxc_dxtn.so
 
-txc_compress_dxtn.o : txc_compress_dxtn.c txc_dxtn.h
-	gcc -c -O3 -Wall -pedantic -fPIC -o txc_compress_dxtn.o txc_compress_dxtn.c
+$(LIB): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS)
 
-txc_fetch_dxtn.o : txc_fetch_dxtn.c txc_dxtn.h
-	gcc -c -O3 -Wall -pedantic -fPIC -o txc_fetch_dxtn.o txc_fetch_dxtn.c
+%.o: %.c txc_dxtn.h
+	$(CC) $(CFLAGS) $(OPT_CFLAGS) -c -o $@ $<
 
 clean:
-	rm txc_fetch_dxtn.o txc_compress_dxtn.o libtxc_dxtn.so
+	rm -f $(OBJS) $(LIB)
 
-install: libtxc_dxtn.so
-	install libtxc_dxtn.so /usr/lib/
+install: $(LIB)
+	install -d $(DESTDIR)/usr/lib
+	install -m 755 $(LIB) $(DESTDIR)/usr/lib
