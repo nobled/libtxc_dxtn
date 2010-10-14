@@ -7,3 +7,6 @@
 - fix serious copy & paste errors in fetch functions introduced with 20050819 version
 - new Makefile (provided by Tilman Sauerbeck)
 - minor cosmetic fixes
+
+20070518:
+- add the missing dstRowStride parameter Mesa uses

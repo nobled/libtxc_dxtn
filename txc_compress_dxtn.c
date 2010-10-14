@@ -448,7 +448,7 @@ static void encodedxt5alpha(GLubyte *blkaddr, GLubyte srccolors[4][4][4],
       /* could also thest for alpha0 == alpha1 (and not min/max), but probably not common, so don't bother */
 
       *blkaddr++ = srccolors[0][0][3];
-      *blkaddr++;
+      blkaddr++;
       *blkaddr++ = 0;
       *blkaddr++ = 0;
       *blkaddr++ = 0;
@@ -751,18 +751,22 @@ static void extractsrccolors( GLubyte srcpixels[4][4][4], const GLchan *srcaddr,
 
 
 void tx_compress_dxtn(GLint srccomps, GLint width, GLint height, const GLubyte *srcPixData,
-                     GLenum destFormat, GLubyte *dest)
+                     GLenum destFormat, GLubyte *dest, GLint dstRowStride)
 {
       GLubyte *blkaddr = dest;
       GLubyte srcpixels[4][4][4];
       const GLchan *srcaddr = srcPixData;
       GLint numxpixels, numypixels;
       GLint i, j;
+      GLint dstRowDiff;
 
    switch (destFormat) {
    case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
    case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
- /*     fprintf(stderr, "dxt1 tex width %d tex height %d\n", width, height); */
+      /* hmm we used to get called without dstRowStride... */
+      dstRowDiff = dstRowStride >= (width * 2) ? dstRowStride - (((width + 3) & ~3) * 2) : 0;
+/*      fprintf(stderr, "dxt1 tex width %d tex height %d dstRowStride %d\n",
+              width, height, dstRowStride); */
       for (j = 0; j < height; j += 4) {
          if (height > j + 3) numypixels = 4;
          else numypixels = height - j;
@@ -775,11 +779,13 @@ void tx_compress_dxtn(GLint srccomps, GLint width, GLint height, const GLubyte *
             srcaddr += srccomps * numxpixels;
             blkaddr += 8;
          }
+         blkaddr += dstRowDiff;
       }
       break;
    case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
-
-/*      fprintf(stderr, "dxt3 tex width %d tex height %d\n", width, height); */
+      dstRowDiff = dstRowStride >= (width * 4) ? dstRowStride - (((width + 3) & ~3) * 4) : 0;
+/*      fprintf(stderr, "dxt3 tex width %d tex height %d dstRowStride %d\n",
+              width, height, dstRowStride); */
       for (j = 0; j < height; j += 4) {
          if (height > j + 3) numypixels = 4;
          else numypixels = height - j;
@@ -800,10 +806,13 @@ void tx_compress_dxtn(GLint srccomps, GLint width, GLint height, const GLubyte *
             srcaddr += srccomps * numxpixels;
             blkaddr += 8;
          }
+         blkaddr += dstRowDiff;
       }
       break;
    case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-/*      fprintf(stderr, "dxt5 tex width %d tex height %d\n", width, height); */
+      dstRowDiff = dstRowStride >= (width * 4) ? dstRowStride - (((width + 3) & ~3) * 4) : 0;
+/*      fprintf(stderr, "dxt5 tex width %d tex height %d dstRowStride %d\n",
+              width, height, dstRowStride); */
       for (j = 0; j < height; j += 4) {
          if (height > j + 3) numypixels = 4;
          else numypixels = height - j;
@@ -817,6 +826,7 @@ void tx_compress_dxtn(GLint srccomps, GLint width, GLint height, const GLubyte *
             srcaddr += srccomps * numxpixels;
             blkaddr += 16;
          }
+         blkaddr += dstRowDiff;
       }
       break;
    default:
